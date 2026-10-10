@@ -108,8 +108,13 @@ export default function SubmissionForm() {
         <input id="repoUrl" name="repoUrl" type="url" required maxLength={500} defaultValue={values.repoUrl} placeholder="https://github.com/your-team/your-project" className={inputClass} />
       </Field>
 
-      <Field label="Demo / video link" name="demoUrl" error={errors.demoUrl}>
-        <input id="demoUrl" name="demoUrl" type="url" required maxLength={500} defaultValue={values.demoUrl} placeholder="https://youtu.be/…" className={inputClass} />
+      <Field
+        label="Demo / video link (optional)"
+        name="demoUrl"
+        error={errors.demoUrl}
+        hint="Optional — adding a demo or video link earns bonus points."
+      >
+        <input id="demoUrl" name="demoUrl" type="url" maxLength={500} defaultValue={values.demoUrl} placeholder="https://youtu.be/…" className={inputClass} />
       </Field>
 
       {/* Honeypot for bots — hidden from people and assistive tech */}

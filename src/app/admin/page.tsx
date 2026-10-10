@@ -191,9 +191,13 @@ export default async function AdminPage({
                     Repo
                   </a>
                   <span className="px-2 text-slate-600">·</span>
-                  <a href={s.demo_url} target="_blank" rel="noopener noreferrer" className="text-indigo-300 hover:underline">
-                    Demo
-                  </a>
+                  {s.demo_url ? (
+                    <a href={s.demo_url} target="_blank" rel="noopener noreferrer" className="text-indigo-300 hover:underline">
+                      Demo
+                    </a>
+                  ) : (
+                    <span className="text-slate-600">No demo</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   {s.is_late ? (

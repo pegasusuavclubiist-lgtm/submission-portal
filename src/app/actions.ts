@@ -44,8 +44,9 @@ export async function submitProject(
     errors.description = "Description must be 20–3000 characters.";
   if (!isHttpUrl(values.repoUrl) || values.repoUrl.length > 500)
     errors.repoUrl = "Enter a valid repository URL starting with https://";
-  if (!isHttpUrl(values.demoUrl) || values.demoUrl.length > 500)
-    errors.demoUrl = "Enter a valid demo/video URL starting with https://";
+  // Demo/video link is optional (bonus points). If given, it must be a valid URL.
+  if (values.demoUrl && (!isHttpUrl(values.demoUrl) || values.demoUrl.length > 500))
+    errors.demoUrl = "If you add a demo/video link, it must be a valid URL starting with https://";
 
   if (Object.keys(errors).length > 0) {
     return { status: "error", errors, values };
