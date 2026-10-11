@@ -47,6 +47,44 @@ export async function destroySession(): Promise<void> {
   store.delete(COOKIE_NAME);
 }
 
+// ---------------------------------------------------------------------------
+// Judge sessions (separate cookie; the "judge:" prefix means an admin cookie can
+// never be replayed as a judge cookie or the other way round).
+// ---------------------------------------------------------------------------
+const JUDGE_COOKIE = "orion_judge";
+
+export async function createJudgeSession(judgeId: number): Promise<void> {
+  const expires = Date.now() + SESSION_SECONDS * 1000;
+  const payload = `${judgeId}:${expires}`;
+  const store = await cookies();
+  store.set(JUDGE_COOKIE, `${payload}.${sign(`judge:${payload}`)}`, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_SECONDS,
+  });
+}
+
+export async function destroyJudgeSession(): Promise<void> {
+  const store = await cookies();
+  store.delete(JUDGE_COOKIE);
+}
+
+/** Returns the signed-in judge's id, or null. */
+export async function readJudgeSession(): Promise<number | null> {
+  if (!process.env.ADMIN_PASSWORD) return null;
+  const token = (await cookies()).get(JUDGE_COOKIE)?.value;
+  if (!token) return null;
+  const [payload, signature] = token.split(".");
+  if (!payload || !signature) return null;
+  if (!safeEqual(signature, sign(`judge:${payload}`))) return null;
+  const [id, expires] = payload.split(":");
+  if (!(Number(expires) > Date.now())) return null;
+  const judgeId = Number(id);
+  return Number.isInteger(judgeId) ? judgeId : null;
+}
+
 export async function isAdmin(): Promise<boolean> {
   if (!process.env.ADMIN_PASSWORD) return false;
   const token = (await cookies()).get(COOKIE_NAME)?.value;

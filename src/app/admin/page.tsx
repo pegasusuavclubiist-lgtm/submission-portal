@@ -96,7 +96,10 @@ export default async function AdminPage({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <a href="/admin/export" className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-sm text-slate-200 hover:bg-white/10">
+          <a href="/admin/judging" className="rounded-lg bg-indigo-500 px-3.5 py-2 text-sm font-semibold text-white hover:bg-indigo-400">
+            Judging panel
+          </a>
+          <a href="/admin/export"className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-sm text-slate-200 hover:bg-white/10">
             Export CSV
           </a>
           <form action={logoutAction}>

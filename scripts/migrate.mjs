@@ -55,6 +55,59 @@ const statements = [
   `CREATE TRIGGER submissions_protect_flags
      BEFORE UPDATE ON submissions
      FOR EACH ROW EXECUTE FUNCTION protect_submission_flags()`,
+
+  // ---------------------------------------------------------------------------
+  // Judging panel
+  // ---------------------------------------------------------------------------
+
+  // A team may submit more than once (Day 1 update, then final). team_key groups
+  // those rows into one team: lower-cased, trimmed, inner spaces collapsed.
+  `ALTER TABLE submissions
+     ADD COLUMN IF NOT EXISTS team_key TEXT
+     GENERATED ALWAYS AS (lower(regexp_replace(btrim(team_name), '\\s+', ' ', 'g'))) STORED`,
+
+  `CREATE INDEX IF NOT EXISTS submissions_team_key_idx ON submissions (team_key, created_at DESC)`,
+
+  `ALTER TABLE settings ADD COLUMN IF NOT EXISTS scoring_locked BOOLEAN NOT NULL DEFAULT FALSE`,
+
+  `CREATE TABLE IF NOT EXISTS judges (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name        TEXT        NOT NULL CHECK (char_length(name) BETWEEN 2 AND 80),
+    code        TEXT        NOT NULL UNIQUE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+
+  // One row per (judge, team). Marks follow rulebook 13.1; each column is capped at
+  // its criterion's weight. A judge with a conflict of interest (9.8) recuses: no marks.
+  `CREATE TABLE IF NOT EXISTS scores (
+    judge_id      BIGINT       NOT NULL REFERENCES judges(id) ON DELETE CASCADE,
+    team_key      TEXT         NOT NULL,
+    conflict      BOOLEAN      NOT NULL DEFAULT FALSE,
+    innovation    NUMERIC(4,1) CHECK (innovation   BETWEEN 0 AND 25),
+    technical     NUMERIC(4,1) CHECK (technical    BETWEEN 0 AND 20),
+    relevance     NUMERIC(4,1) CHECK (relevance    BETWEEN 0 AND 15),
+    scalability   NUMERIC(4,1) CHECK (scalability  BETWEEN 0 AND 15),
+    presentation  NUMERIC(4,1) CHECK (presentation BETWEEN 0 AND 15),
+    cad           NUMERIC(4,1) CHECK (cad          BETWEEN 0 AND 10),
+    comments      TEXT         CHECK (char_length(comments) <= 2000),
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    PRIMARY KEY (judge_id, team_key),
+    CHECK (
+      conflict
+      OR (innovation IS NOT NULL AND technical IS NOT NULL AND relevance IS NOT NULL
+          AND scalability IS NOT NULL AND presentation IS NOT NULL AND cad IS NOT NULL)
+    )
+  )`,
+
+  // Per-team settings applied by the organisers: track (5.4), Interdisciplinary Bonus
+  // (5.2, capped at 5) and penalties (Section 15 / 11.3).
+  `CREATE TABLE IF NOT EXISTS team_meta (
+    team_key  TEXT         PRIMARY KEY,
+    track     TEXT         CHECK (track IN ('senior', 'first_year')),
+    bonus     NUMERIC(3,1) NOT NULL DEFAULT 0 CHECK (bonus BETWEEN 0 AND 5),
+    penalty   NUMERIC(4,1) NOT NULL DEFAULT 0 CHECK (penalty >= 0),
+    note      TEXT         CHECK (char_length(note) <= 500)
+  )`,
 ];
 
 try {
